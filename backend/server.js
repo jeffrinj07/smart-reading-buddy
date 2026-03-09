@@ -66,5 +66,9 @@ if (require('fs').existsSync(frontendPath)) {
     console.warn(`⚠️ Frontend directory not found at ${frontendPath}`);
 }
 
-const PORT = process.env.PORT || 10000; // Render preferred default
-app.listen(PORT, '0.0.0.0', () => console.log(`📡 Notification backend listening on port ${PORT}`));
+const PORT = process.env.PORT || 10000;
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, '0.0.0.0', () => console.log(`📡 Notification backend listening on port ${PORT}`));
+}
+
+module.exports = app;
