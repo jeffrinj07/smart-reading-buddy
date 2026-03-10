@@ -2073,9 +2073,12 @@
                     // Update masterState ALWAYS before potential notifications
                     if (data.currentBook) masterState.currentBook = data.currentBook;
                     if (data.bookmarks) {
-                        const mergedBookmarks = Object.assign({}, masterState.bookmarks, data.bookmarks);
-                        masterState.bookmarks = mergedBookmarks;
-                        allBookmarks = mergedBookmarks;
+                        // Max-Page Logic: Only update if the new value is GREATER than existing
+                        // This prevents fresh "0" day-nodes from overwriting progress
+                        for (const [key, val] of Object.entries(data.bookmarks)) {
+                            masterState.bookmarks[key] = Math.max(masterState.bookmarks[key] || 0, val);
+                        }
+                        allBookmarks = masterState.bookmarks;
                     }
                     
                     todayData = data;
@@ -2372,10 +2375,14 @@
         // Show notification when session starts
         function showSessionStartNotification() {
             // Get data with fallbacks: Today -> MasterState -> LastSession
+            // CRITICAL: We only take values if they are > 0 to avoid "Page 0" resets
             let currentBook = todayData.currentBook || masterState.currentBook || (lastSession ? lastSession.book : 1);
-            let bookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || 
-                           (masterState.bookmarks && masterState.bookmarks[`book${currentBook}`]) || 
-                           (lastSession && lastSession.book === currentBook ? lastSession.page : 0);
+            
+            let todayBookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || 0;
+            let masterBookmark = (masterState.bookmarks && masterState.bookmarks[`book${currentBook}`]) || 0;
+            let sessionBookmark = (lastSession && lastSession.book === currentBook ? lastSession.page : 0);
+
+            let bookmark = todayBookmark || masterBookmark || sessionBookmark || 0;
             
             const bookName = bookNames[`book${currentBook}`] || (lastSession && lastSession.book === currentBook ? lastSession.bookName : `Book ${currentBook}`);
             
@@ -2554,44 +2561,44 @@
             
             const today = new Date().toISOString().split('T')[0];
             
-            // Load all daily analytics first to synthesize state
-            database.ref('users/user1/dailyAnalytics').once('value', (snapshot) => {
-                allDailyData = snapshot.val() || {};
-                
-                // Synthesis: find the most recent currentBook and latest bookmarks for each book
-                synthesizeMasterState();
-                
-                // Calculate lifetime total
-                lifetimeTotalSeconds = 0;
-                Object.values(allDailyData).forEach(day => {
-                    lifetimeTotalSeconds += day.studySeconds || 0;
-                });
-                
-                // Extract today's data from the full set
-                todayData = allDailyData[today] || {
-                    studySeconds: 0,
-                    breaks: 0,
-                    postureAlerts: 0,
-                    currentBook: masterState.currentBook,
-                    bookmarks: {}
-                };
-                
-                // Ensure today's bookmarks are part of allBookmarks for legacy code compatibility
-                allBookmarks = masterState.bookmarks;
-                
-                if (currentPage === 'analytics') {
-                    loadAnalyticsData(currentAnalyticsPeriod);
-                }
-                updateHomePage();
-                updateBonusPoints();
-                updateAllCharts();
-                updateAchievements();
-            });
-
-            // Load all session history
+            // 1. Load all session history FIRST so lastSession is available for synthesis
             database.ref('users/user1/sessionHistory').once('value', (snapshot) => {
                 const data = snapshot.val() || {};
                 processSessions(data);
+                
+                // 2. Load all daily analytics and synthesize state
+                database.ref('users/user1/dailyAnalytics').once('value', (snapshot) => {
+                    allDailyData = snapshot.val() || {};
+                    
+                    // Synthesis: now has access to lastSession
+                    synthesizeMasterState();
+                    
+                    // Calculate lifetime total
+                    lifetimeTotalSeconds = 0;
+                    Object.values(allDailyData).forEach(day => {
+                        lifetimeTotalSeconds += day.studySeconds || 0;
+                    });
+                    
+                    // Extract today's data from the full set
+                    todayData = allDailyData[today] || {
+                        studySeconds: 0,
+                        breaks: 0,
+                        postureAlerts: 0,
+                        currentBook: masterState.currentBook,
+                        bookmarks: {}
+                    };
+                    
+                    // Ensure today's bookmarks are part of allBookmarks for legacy code compatibility
+                    allBookmarks = masterState.bookmarks;
+                    
+                    if (currentPage === 'analytics') {
+                        loadAnalyticsData(currentAnalyticsPeriod);
+                    }
+                    updateHomePage();
+                    updateBonusPoints();
+                    updateAllCharts();
+                    updateAchievements();
+                });
             });
 
             // Load book names from localStorage
@@ -2656,10 +2663,14 @@
             document.getElementById('homeTotalStudy').textContent = totalHours;
             
             // Refined Fallbacks: Today -> MasterState -> LastSession
+            // Only use values > 0 to avoid initialization resets
             const currentBook = todayData.currentBook || masterState.currentBook || (lastSession ? lastSession.book : 1);
-            const bookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || 
-                             (masterState.bookmarks && masterState.bookmarks[`book${currentBook}`]) || 
-                             (lastSession && lastSession.book === currentBook ? lastSession.page : 0);
+            
+            const todayBookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || 0;
+            const masterBookmark = (masterState.bookmarks && masterState.bookmarks[`book${currentBook}`]) || 0;
+            const sessionBookmark = (lastSession && lastSession.book === currentBook ? lastSession.page : 0);
+            
+            const bookmark = todayBookmark || masterBookmark || sessionBookmark || 0;
             
             document.getElementById('homeCurrentBook').textContent = bookNames[`book${currentBook}`] || `Book ${currentBook}`;
             document.getElementById('homeCurrentPage').textContent = `Page ${bookmark}`;
