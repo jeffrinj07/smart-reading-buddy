@@ -2371,9 +2371,13 @@
         // Show notification when session starts
         // Show notification when session starts
         function showSessionStartNotification() {
-            const currentBook = todayData.currentBook || masterState.currentBook || 1;
-            const bookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || masterState.bookmarks[`book${currentBook}`] || 0;
-            const bookName = bookNames[`book${currentBook}`] || `Book ${currentBook}`;
+            // Get data with fallbacks: Today -> MasterState -> LastSession
+            let currentBook = todayData.currentBook || masterState.currentBook || (lastSession ? lastSession.book : 1);
+            let bookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || 
+                           (masterState.bookmarks && masterState.bookmarks[`book${currentBook}`]) || 
+                           (lastSession && lastSession.book === currentBook ? lastSession.page : 0);
+            
+            const bookName = bookNames[`book${currentBook}`] || (lastSession && lastSession.book === currentBook ? lastSession.bookName : `Book ${currentBook}`);
             
             const message = `Continue reading "${bookName}" - You're on Page ${bookmark}`;
             currentSessionStartTime = new Date();
@@ -2602,11 +2606,12 @@
             // Sort daily keys descending to find the latest
             const dayKeys = Object.keys(allDailyData).sort().reverse();
             
-            // 1. Find the most recent currentBook that was actually set
+            // 1. Find the most recent currentBook that isn't the default (1)
             masterState.currentBook = 1;
             for (const key of dayKeys) {
-                if (allDailyData[key].currentBook) {
-                    masterState.currentBook = allDailyData[key].currentBook;
+                const book = allDailyData[key].currentBook;
+                if (book && book !== 1) {
+                    masterState.currentBook = book;
                     break;
                 }
             }
@@ -2617,17 +2622,30 @@
                 const bookKey = `book${i}`;
                 masterState.bookmarks[bookKey] = 0;
                 
-                // Look through days to find the latest page number for this book
+                // Look through days to find the latest NON-ZERO page number for this book
                 for (const key of dayKeys) {
                     const bookmarks = allDailyData[key].bookmarks;
-                    if (bookmarks && bookmarks[bookKey] !== undefined) {
+                    if (bookmarks && bookmarks[bookKey] && bookmarks[bookKey] > 0) {
                         masterState.bookmarks[bookKey] = bookmarks[bookKey];
                         break;
                     }
                 }
             }
             
-            console.log('🔄 Master state synthesized:', masterState);
+            // 3. Last Session Fallback: If masterState still has 0 for a book, or we need 
+            // to double check the "latest" stopped position, use sessionHistory
+            if (lastSession && lastSession.bookName) {
+                const bookNum = lastSession.book || 1;
+                const bookKey = `book${bookNum}`;
+                
+                // If session history has a later page than dailyAnalytics (could happen due to sync timing)
+                if (lastSession.page > (masterState.bookmarks[bookKey] || 0)) {
+                    masterState.bookmarks[bookKey] = lastSession.page;
+                    masterState.currentBook = bookNum;
+                }
+            }
+            
+            console.log('🔄 Refined master state synthesized:', masterState);
         }
 
         // Update Home Page
@@ -2637,9 +2655,11 @@
             
             document.getElementById('homeTotalStudy').textContent = totalHours;
             
-            // Use masterState for display if today's data isn't current
-            const currentBook = todayData.currentBook || masterState.currentBook || 1;
-            const bookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || masterState.bookmarks[`book${currentBook}`] || 0;
+            // Refined Fallbacks: Today -> MasterState -> LastSession
+            const currentBook = todayData.currentBook || masterState.currentBook || (lastSession ? lastSession.book : 1);
+            const bookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || 
+                             (masterState.bookmarks && masterState.bookmarks[`book${currentBook}`]) || 
+                             (lastSession && lastSession.book === currentBook ? lastSession.page : 0);
             
             document.getElementById('homeCurrentBook').textContent = bookNames[`book${currentBook}`] || `Book ${currentBook}`;
             document.getElementById('homeCurrentPage').textContent = `Page ${bookmark}`;
