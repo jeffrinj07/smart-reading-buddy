@@ -1780,8 +1780,14 @@
         <div id="achievementsPage" class="page">
             <div class="card">
                 <div class="card-header">
-                    <h2><i class="fas fa-trophy"></i> Your Achievements</h2>
-                    <i class="fas fa-star" style="color: var(--warning); font-size: 1.5rem;"></i>
+                    <div style="display: flex; flex-direction: column;">
+                        <h2><i class="fas fa-trophy"></i> Your Achievements</h2>
+                        <span id="achievementHistoryLabel" style="font-size: 0.9rem; font-weight: 600; margin-top: 5px;">Viewing Today</span>
+                    </div>
+                    <div class="time-filter">
+                        <button class="filter-btn" onclick="navigateAchievements(-1)" title="Previous Day"><i class="fas fa-chevron-left"></i></button>
+                        <button class="filter-btn" onclick="navigateAchievements(1)" title="Next Day"><i class="fas fa-chevron-right"></i></button>
+                    </div>
                 </div>
                 
                 <!-- Progress Circle -->
@@ -1881,6 +1887,7 @@
             breaks: 0,
             postureAlerts: 0
         };
+        let achievementsViewDate = new Date().toISOString().split('T')[0];
         
         // Achievement Badges
         const badges = [
@@ -2063,32 +2070,32 @@
             database.ref(`users/user1/dailyAnalytics/${today}`).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    const currentStudySeconds = data.studySeconds || 0;
-                    
-                    // Check if session just started (study seconds changed from 0 or very small value)
-                    if (currentStudySeconds > 0 && previousStudySeconds === 0 && data.sessionActive) {
-                        showSessionStartNotification();
+                    // Update masterState ALWAYS before potential notifications
+                    if (data.currentBook) masterState.currentBook = data.currentBook;
+                    if (data.bookmarks) {
+                        const mergedBookmarks = Object.assign({}, masterState.bookmarks, data.bookmarks);
+                        masterState.bookmarks = mergedBookmarks;
+                        allBookmarks = mergedBookmarks;
                     }
-                    
-                    previousStudySeconds = currentStudySeconds;
                     
                     todayData = data;
                     
-                    // Update masterState when today's data is updated (e.g. via hardware)
-                    if (data.currentBook) masterState.currentBook = data.currentBook;
-                    if (data.bookmarks) {
-                        Object.assign(masterState.bookmarks, data.bookmarks);
-                        allBookmarks = masterState.bookmarks;
+                    // Now check for session start AFTER data is processed
+                    const currentStudySeconds = data.studySeconds || 0;
+                    if (currentStudySeconds > 0 && previousStudySeconds === 0 && data.sessionActive) {
+                        showSessionStartNotification();
                     }
+                    previousStudySeconds = currentStudySeconds;
 
-                    console.log('📊 Real-time update: Today data changed');
+                    console.log('📊 Real-time update: Today data changed and masterState synced');
                     updateHomePage();
                     updateBonusPoints();
                     updateAllCharts();
                     
-                    // Check if session just started
-                    const sessionActive = data.sessionActive || false;
-                    lastActiveSession = sessionActive;
+                    // If viewing history, we might need to refresh if today changed
+                    if (achievementsViewDate === today) {
+                        updateAchievements();
+                    }
                 }
             });
 
@@ -2310,7 +2317,9 @@
             updateLastSession();
             updateTodayTotals();
             updateHomePage();
-            updateAchievements();
+            if (achievementsViewDate === new Date().toISOString().split('T')[0]) {
+                updateAchievements();
+            }
             
             if (currentPage === 'sessions') {
                 filterSessions();
@@ -3222,68 +3231,109 @@
         }
 
         // Update Achievements
-        function updateAchievements() {
-            const studyMinutes = parseInt(document.getElementById('todayTotalMinutes').textContent) || 0;
+        function updateAchievements(targetDate = null) {
+            if (!targetDate) {
+                targetDate = achievementsViewDate || new Date().toISOString().split('T')[0];
+            }
+            
+            const isToday = targetDate === new Date().toISOString().split('T')[0];
+            const historicalData = allDailyData[targetDate] || {
+                studySeconds: 0,
+                breaks: 0,
+                postureAlerts: 0,
+                bookmarks: {}
+            };
+
+            const studyMinutes = Math.round(historicalData.studySeconds / 60);
             const completedCount = Object.keys(completedBooks).filter(k => k.startsWith('slot') && !k.includes('_')).length;
+            
+            // Streak is global, but we use it for badge logic
+            const currentStreak = isToday ? streak : calculateStreakForDate(targetDate);
             
             // Check and unlock badges
             badges.forEach(badge => {
                 switch(badge.id) {
                     case 1: // Early Bird
-                        const hour = new Date().getHours();
-                        badge.unlocked = hour < 8 && studyMinutes > 0;
+                        badge.unlocked = hasHistoricalSession(targetDate, 0, 8);
                         break;
                     case 2: // Night Owl
-                        const hour2 = new Date().getHours();
-                        badge.unlocked = hour2 >= 22 && studyMinutes > 0;
+                        badge.unlocked = hasHistoricalSession(targetDate, 22, 24);
                         break;
                     case 3: // 7 Day Streak
-                        badge.unlocked = streak >= 7;
+                        badge.unlocked = currentStreak >= 7;
                         break;
                     case 4: // 30 Day Streak
-                        badge.unlocked = streak >= 30;
+                        badge.unlocked = currentStreak >= 30;
                         break;
                     case 5: // Perfect Posture
-                        const postureScore = calculatePostureScore();
-                        badge.unlocked = postureScore === 100 && streak >= 7;
+                        const postureScore = historicalData.studySeconds > 0 ? Math.max(0, 100 - ((historicalData.postureAlerts || 0) * 5)) : 100;
+                        badge.unlocked = postureScore === 100 && currentStreak >= 7;
                         break;
                     case 6: // Bookworm
                         badge.unlocked = completedCount >= 5;
                         break;
                     case 7: // Speed Reader
-                        const maxPage = Math.max(...Object.values(allBookmarks));
-                        badge.unlocked = maxPage >= 100;
+                        const pagesToday = Math.max(...Object.values(historicalData.bookmarks || {0: 0}), 0);
+                        badge.unlocked = pagesToday >= 100;
                         break;
                     case 8: // Break Master
-                        const breakRatio = calculateBreakRatio();
-                        badge.unlocked = breakRatio >= 90;
+                        const expectedBreaks = Math.floor(studyMinutes / 30);
+                        const breakRatio = expectedBreaks > 0 ? (historicalData.breaks / expectedBreaks) * 100 : 100;
+                        badge.unlocked = breakRatio >= 90 && studyMinutes > 0;
                         break;
                     case 9: // Consistency King
-                        badge.unlocked = streak >= 30;
+                        badge.unlocked = currentStreak >= 30;
                         break;
                     case 10: // Posture Pro
-                        let goodDays = 0;
-                        Object.values(allDailyData).forEach(day => {
-                            if (day.postureAlerts < 3) goodDays++;
-                        });
-                        badge.unlocked = goodDays >= 25;
+                        badge.unlocked = historicalData.postureAlerts < 3 && studyMinutes > 30;
                         break;
                     case 11: // Century Club
                         badge.unlocked = lifetimeTotalSeconds >= 360000; // 100 hours
                         break;
                     case 12: // Legend
-                        badge.unlocked = badges.filter(b => b.unlocked).length >= 11;
+                        badge.unlocked = badges.filter(b => b.unlocked && b.id !== 12).length >= 11;
                         break;
                 }
             });
             
-            renderAchievements();
+            renderAchievements(targetDate);
+        }
+
+        // Helper: Calculate streak for a specific historical date
+        function calculateStreakForDate(targetDate) {
+            let count = 0;
+            let current = new Date(targetDate);
+            while (true) {
+                const dateStr = current.toISOString().split('T')[0];
+                const day = allDailyData[dateStr];
+                if (day && day.studySeconds > 0) {
+                    count++;
+                    current.setDate(current.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            return count;
+        }
+
+        // Helper: Check if a session occurred in a time range for a date
+        function hasHistoricalSession(dateStr, startHour, endHour) {
+            return allSessions.some(s => {
+                if (s.date !== dateStr) return false;
+                const startTime = s.startTime ? new Date(s.startTime * 1000) : null;
+                if (!startTime) return false;
+                const hour = startTime.getHours();
+                return hour >= startHour && hour < endHour;
+            });
         }
 
         // Render Achievements
-        function renderAchievements() {
+        function renderAchievements(targetDate = null) {
             const container = document.getElementById('badgeContainer');
             if (!container) return;
+            
+            if (!targetDate) targetDate = achievementsViewDate;
+            const isToday = targetDate === new Date().toISOString().split('T')[0];
             
             container.innerHTML = '';
             
@@ -3291,8 +3341,15 @@
             const progress = (unlockedCount / badges.length) * 100;
             
             document.getElementById('achievementCount').textContent = unlockedCount;
-            document.getElementById('streakCountAchievements').textContent = streak;
+            document.getElementById('streakCountAchievements').textContent = isToday ? streak : calculateStreakForDate(targetDate);
             
+            // Update History Info
+            const historyLabel = document.getElementById('achievementHistoryLabel');
+            if (historyLabel) {
+                historyLabel.textContent = isToday ? 'Viewing Today' : `Viewing: ${targetDate}`;
+                historyLabel.style.color = isToday ? 'var(--success)' : 'var(--primary)';
+            }
+
             // Update progress circle
             const circle = document.getElementById('achievementProgress');
             if (circle) {
@@ -3300,7 +3357,7 @@
                 circle.querySelector('.progress-value').textContent = `${Math.round(progress)}%`;
             }
             
-            // Find next achievement
+            // Find next achievement (only relevant for today or global ones)
             const nextBadge = badges.find(b => !b.unlocked);
             if (nextBadge) {
                 document.getElementById('nextAchievement').textContent = nextBadge.name;
@@ -3319,6 +3376,21 @@
                 `;
                 container.appendChild(badgeEl);
             });
+        }
+
+        // Change Achievements Date
+        function navigateAchievements(direction) {
+            const current = new Date(achievementsViewDate);
+            current.setDate(current.getDate() + direction);
+            
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0,0,0,0);
+            
+            if (current >= tomorrow) return;
+            
+            achievementsViewDate = current.toISOString().split('T')[0];
+            updateAchievements(achievementsViewDate);
         }
 
         // Filter Sessions
