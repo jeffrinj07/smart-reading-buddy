@@ -2357,8 +2357,10 @@
         function updateLastSession() {
             if (lastSession) {
                 const duration = Math.round(lastSession.duration / 60);
+                const customName = bookNames[`book${lastSession.book}`] || lastSession.bookName;
+                
                 document.getElementById('lastSessionDuration').textContent = duration;
-                document.getElementById('lastSessionBook').textContent = lastSession.bookName;
+                document.getElementById('lastSessionBook').textContent = customName;
                 document.getElementById('lastSessionPage').textContent = `Page ${lastSession.page}`;
                 document.getElementById('lastSessionBreaks').textContent = lastSession.breaks;
                 document.getElementById('lastSessionAlerts').textContent = lastSession.postureAlerts;
@@ -2374,16 +2376,20 @@
         // Show notification when session starts
         // Show notification when session starts
         function showSessionStartNotification() {
-            // Get data with fallbacks: Today -> MasterState -> LastSession
-            // CRITICAL: We only take values if they are > 0 to avoid "Page 0" resets
-            let currentBook = todayData.currentBook || masterState.currentBook || (lastSession ? lastSession.book : 1);
+            // Priority Fallback: 
+            // 1. Today's live data (if > 0)
+            // 2. Verified Last Session from History (Most reliable record)
+            // 3. Synthesized Master State
+            
+            let currentBook = todayData.currentBook || (lastSession ? lastSession.book : 1) || masterState.currentBook || 1;
             
             let todayBookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || 0;
-            let masterBookmark = (masterState.bookmarks && masterState.bookmarks[`book${currentBook}`]) || 0;
             let sessionBookmark = (lastSession && lastSession.book === currentBook ? lastSession.page : 0);
+            let masterBookmark = (masterState.bookmarks && masterState.bookmarks[`book${currentBook}`]) || 0;
 
-            let bookmark = todayBookmark || masterBookmark || sessionBookmark || 0;
+            let bookmark = todayBookmark || sessionBookmark || masterBookmark || 0;
             
+            // ALWAYS use custom book name if available
             const bookName = bookNames[`book${currentBook}`] || (lastSession && lastSession.book === currentBook ? lastSession.bookName : `Book ${currentBook}`);
             
             const message = `Continue reading "${bookName}" - You're on Page ${bookmark}`;
@@ -2639,20 +2645,14 @@
                 }
             }
             
-            // 3. Last Session Fallback: If masterState still has 0 for a book, or we need 
-            // to double check the "latest" stopped position, use sessionHistory
-            if (lastSession && lastSession.bookName) {
-                const bookNum = lastSession.book || 1;
-                const bookKey = `book${bookNum}`;
-                
-                // If session history has a later page than dailyAnalytics (could happen due to sync timing)
-                if (lastSession.page > (masterState.bookmarks[bookKey] || 0)) {
-                    masterState.bookmarks[bookKey] = lastSession.page;
-                    masterState.currentBook = bookNum;
-                }
+            // Synthesis Logic: Prioritize Verified Session History
+            if (lastSession && lastSession.book) {
+                masterState.currentBook = lastSession.book;
+                const bookKey = `book${lastSession.book}`;
+                masterState.bookmarks[bookKey] = Math.max(masterState.bookmarks[bookKey] || 0, lastSession.page || 0);
             }
-            
-            console.log('🔄 Refined master state synthesized:', masterState);
+
+            console.log('🔄 Final Accuracy synthesis complete:', masterState);
         }
 
         // Update Home Page
