@@ -2376,18 +2376,19 @@
         // Show notification when session starts
         // Show notification when session starts
         function showSessionStartNotification() {
-            // Priority Fallback: 
-            // 1. Today's live data (if > 0)
-            // 2. Verified Last Session from History (Most reliable record)
-            // 3. Synthesized Master State
-            
+            // Robust Comparison: Ensure we handle string vs number book IDs
             let currentBook = todayData.currentBook || (lastSession ? lastSession.book : 1) || masterState.currentBook || 1;
             
             let todayBookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || 0;
-            let sessionBookmark = (lastSession && lastSession.book === currentBook ? lastSession.page : 0);
+            
+            // Check lastSession specifically for this book using loose equality (==) for type safety
+            let sessionBookmark = (lastSession && lastSession.book == currentBook) ? lastSession.page : 0;
+            
             let masterBookmark = (masterState.bookmarks && masterState.bookmarks[`book${currentBook}`]) || 0;
 
-            let bookmark = todayBookmark || sessionBookmark || masterBookmark || 0;
+            // Absolute Fallback: If both fail, take the lastSession page REGARDLESS of book number
+            // (User request: "just get the page from last session")
+            let bookmark = todayBookmark || sessionBookmark || masterBookmark || (lastSession ? lastSession.page : 0);
             
             // ALWAYS use custom book name if available
             const bookName = bookNames[`book${currentBook}`] || (lastSession && lastSession.book === currentBook ? lastSession.bookName : `Book ${currentBook}`);
@@ -2755,7 +2756,7 @@
                             </span>
                         </div>
                         <div class="timeline-details">
-                            <span><i class="fas fa-book"></i> ${session.bookName || `Book ${session.book}`}</span>
+                            <span><i class="fas fa-book"></i> ${bookNames[`book${session.book}`] || session.bookName || `Book ${session.book}`}</span>
                             <span><i class="fas fa-coffee"></i> ${session.breaks} breaks</span>
                             <span><i class="fas fa-exclamation-triangle"></i> ${session.postureAlerts} alerts</span>
                             <span><i class="fas fa-bookmark"></i> Page ${session.page || 0}</span>
@@ -3486,7 +3487,7 @@
                             </span>
                         </div>
                         <div class="timeline-details">
-                            <span><i class="fas fa-book"></i> ${session.bookName || `Book ${session.book}`}</span>
+                            <span><i class="fas fa-book"></i> ${bookNames[`book${session.book}`] || session.bookName || `Book ${session.book}`}</span>
                             <span><i class="fas fa-coffee"></i> ${session.breaks} breaks</span>
                             <span><i class="fas fa-exclamation-triangle"></i> ${session.postureAlerts} alerts</span>
                             <span><i class="fas fa-bookmark"></i> Page ${session.page || 0}</span>
