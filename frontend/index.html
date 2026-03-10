@@ -1858,6 +1858,10 @@
             currentBook: 1,
             bookmarks: {}
         };
+        let masterState = {
+            currentBook: 1,
+            bookmarks: {}
+        };
         let allBookmarks = {};
         let allDailyData = {};
         let completedBooks = {};
@@ -2069,7 +2073,14 @@
                     previousStudySeconds = currentStudySeconds;
                     
                     todayData = data;
-                    allBookmarks = data.bookmarks || {};
+                    
+                    // Update masterState when today's data is updated (e.g. via hardware)
+                    if (data.currentBook) masterState.currentBook = data.currentBook;
+                    if (data.bookmarks) {
+                        Object.assign(masterState.bookmarks, data.bookmarks);
+                        allBookmarks = masterState.bookmarks;
+                    }
+
                     console.log('📊 Real-time update: Today data changed');
                     updateHomePage();
                     updateBonusPoints();
@@ -2351,8 +2362,8 @@
         // Show notification when session starts
         // Show notification when session starts
         function showSessionStartNotification() {
-            const currentBook = todayData.currentBook || 1;
-            const bookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || 0;
+            const currentBook = todayData.currentBook || masterState.currentBook || 1;
+            const bookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || masterState.bookmarks[`book${currentBook}`] || 0;
             const bookName = bookNames[`book${currentBook}`] || `Book ${currentBook}`;
             
             const message = `Continue reading "${bookName}" - You're on Page ${bookmark}`;
@@ -2530,20 +2541,12 @@
             
             const today = new Date().toISOString().split('T')[0];
             
-            // Load today's data
-            database.ref(`users/user1/dailyAnalytics/${today}`).once('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    todayData = data;
-                    allBookmarks = data.bookmarks || {};
-                }
-                updateHomePage();
-                updateBonusPoints();
-            });
-
-            // Load all daily analytics
+            // Load all daily analytics first to synthesize state
             database.ref('users/user1/dailyAnalytics').once('value', (snapshot) => {
                 allDailyData = snapshot.val() || {};
+                
+                // Synthesis: find the most recent currentBook and latest bookmarks for each book
+                synthesizeMasterState();
                 
                 // Calculate lifetime total
                 lifetimeTotalSeconds = 0;
@@ -2551,11 +2554,25 @@
                     lifetimeTotalSeconds += day.studySeconds || 0;
                 });
                 
+                // Extract today's data from the full set
+                todayData = allDailyData[today] || {
+                    studySeconds: 0,
+                    breaks: 0,
+                    postureAlerts: 0,
+                    currentBook: masterState.currentBook,
+                    bookmarks: {}
+                };
+                
+                // Ensure today's bookmarks are part of allBookmarks for legacy code compatibility
+                allBookmarks = masterState.bookmarks;
+                
                 if (currentPage === 'analytics') {
                     loadAnalyticsData(currentAnalyticsPeriod);
                 }
                 updateHomePage();
+                updateBonusPoints();
                 updateAllCharts();
+                updateAchievements();
             });
 
             // Load all session history
@@ -2571,6 +2588,39 @@
             loadCompletedBooks();
         }
 
+        // Synthesize master reading state from all history
+        function synthesizeMasterState() {
+            // Sort daily keys descending to find the latest
+            const dayKeys = Object.keys(allDailyData).sort().reverse();
+            
+            // 1. Find the most recent currentBook that was actually set
+            masterState.currentBook = 1;
+            for (const key of dayKeys) {
+                if (allDailyData[key].currentBook) {
+                    masterState.currentBook = allDailyData[key].currentBook;
+                    break;
+                }
+            }
+            
+            // 2. Synthesize latest bookmarks for all 10 slots
+            masterState.bookmarks = {};
+            for (let i = 1; i <= 10; i++) {
+                const bookKey = `book${i}`;
+                masterState.bookmarks[bookKey] = 0;
+                
+                // Look through days to find the latest page number for this book
+                for (const key of dayKeys) {
+                    const bookmarks = allDailyData[key].bookmarks;
+                    if (bookmarks && bookmarks[bookKey] !== undefined) {
+                        masterState.bookmarks[bookKey] = bookmarks[bookKey];
+                        break;
+                    }
+                }
+            }
+            
+            console.log('🔄 Master state synthesized:', masterState);
+        }
+
         // Update Home Page
         function updateHomePage() {
             const todayMinutes = parseInt(document.getElementById('todayTotalMinutes').textContent) || 0;
@@ -2578,9 +2628,10 @@
             
             document.getElementById('homeTotalStudy').textContent = totalHours;
             
-            // Current book
-            const currentBook = todayData.currentBook || 1;
-            const bookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || 0;
+            // Use masterState for display if today's data isn't current
+            const currentBook = todayData.currentBook || masterState.currentBook || 1;
+            const bookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || masterState.bookmarks[`book${currentBook}`] || 0;
+            
             document.getElementById('homeCurrentBook').textContent = bookNames[`book${currentBook}`] || `Book ${currentBook}`;
             document.getElementById('homeCurrentPage').textContent = `Page ${bookmark}`;
         }
@@ -2702,7 +2753,7 @@
             container.innerHTML = '';
             
             for (let i = 1; i <= 10; i++) {
-                const page = (allBookmarks && allBookmarks[`book${i}`]) ? allBookmarks[`book${i}`] : 0;
+                const page = (masterState.bookmarks && masterState.bookmarks[`book${i}`]) ? masterState.bookmarks[`book${i}`] : 0;
                 const bookName = bookNames[`book${i}`] || `Book ${i}`;
                 const isCompleted = completedBooks[`slot${i}`] || false;
                 
