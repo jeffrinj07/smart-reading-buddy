@@ -228,6 +228,7 @@
             height: 200%;
             background: radial-gradient(circle, rgba(102,126,234,0.1) 0%, transparent 70%);
             animation: spin 20s linear infinite;
+            pointer-events: none;
         }
 
         .header-card::after {
@@ -238,6 +239,13 @@
             font-size: 8rem;
             opacity: 0.05;
             transform: rotate(10deg);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .welcome {
+            position: relative;
+            z-index: 10;
         }
 
         .welcome h2 {
@@ -2120,13 +2128,14 @@
             let lastKnownStudySeconds = -1;
             let lastStudySecondsChangeTime = 0;
             let sessionEndSent = false;
+            let currentSessionId = 0;
 
             // Poll every 10s: if studySeconds is active but hasn't changed for 90s, treat as ended
             setInterval(() => {
                 if (isSessionActive && !sessionEndSent && lastKnownStudySeconds > 0) {
                     const idleMs = Date.now() - lastStudySecondsChangeTime;
                     if (idleMs >= 90000) {   // 90 seconds of no change
-                        console.log('⏹️ Session end detected (idle for 90s).');
+                        console.log(`⏹️ Session ${currentSessionId} end detected (idle for 90s).`);
                         isSessionActive = false;
                         sessionEndSent = true;
                         showSessionEndNotification();
@@ -2154,12 +2163,19 @@
                         previousStudySeconds = currentStudySeconds;
                         lastKnownStudySeconds = currentStudySeconds;
                         lastStudySecondsChangeTime = Date.now();
+                        
+                        // If we load in and they're already studying, consider it active
+                        if (currentStudySeconds > 0) {
+                            isSessionActive = true;
+                            currentSessionId++;
+                        }
                     } else {
                         // Check if study seconds increased, indicating active reading
                         if (currentStudySeconds > previousStudySeconds) {
                             // If a new session has started
                             if (!isSessionActive) {
-                                console.log('▶️ Session start detected (study seconds increased).');
+                                currentSessionId++;
+                                console.log(`▶️ Session ${currentSessionId} start detected (study seconds increased).`);
                                 isSessionActive = true;
                                 sessionEndSent = false;
                                 showSessionStartNotification();
