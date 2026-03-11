@@ -1875,8 +1875,12 @@
         let bonusPoints = 0;
         let lastSession = null;
         let lastActiveSession = false;
+        let sessionNotificationSent = false; // Prevent duplicate session-start notifications
         let lifetimeTotalSeconds = 0;
         let userEmailAddress = null;
+        // Dynamic backend URL - works on any device (laptop, mobile, tablet)
+        // If served from Vercel, window.location.origin IS the backend
+        const BACKEND_URL = window.location.origin;
         let currentSessionStartTime = null;
         let currentSessionData = {
             book: null,
@@ -1925,10 +1929,7 @@
             // Load data from Firebase
             loadAllData();
             
-            // Check for active session notification
-            checkActiveSession();
-            
-            // Set up real-time listeners
+            // Set up real-time listeners (handles session detection too)
             setupRealtimeListeners();
         }
 
@@ -1996,6 +1997,7 @@
         }
 
         // Send Email Notification via backend API
+        // Uses absolute BACKEND_URL so it works on both laptop and mobile
         function sendEmailNotification(subject, message) {
             if (!userEmailAddress) {
                 showNotification({
@@ -2016,7 +2018,7 @@
                 duration: 3000
             });
 
-            fetch('/api/send-email', {
+            fetch(`${BACKEND_URL}/api/send-email`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -2043,7 +2045,7 @@
                 console.error('Email error', err);
                 showNotification({
                     title: '❌ Email Failed',
-                    message: 'Could not send email. Check backend or address',
+                    message: 'Could not send email. Check backend or internet connection.',
                     type: 'error',
                     duration: 6000
                 });
@@ -2065,7 +2067,7 @@
         // Set up real-time Firebase listeners
         function setupRealtimeListeners() {
             const today = new Date().toISOString().split('T')[0];
-            let previousStudySeconds = 0;
+            let previousStudySeconds = -1; // -1 = not yet initialised
             
             database.ref(`users/user1/dailyAnalytics/${today}`).on('value', (snapshot) => {
                 const data = snapshot.val();
@@ -2083,12 +2085,21 @@
                     
                     todayData = data;
                     
-                    // Now check for session start AFTER data is processed
+                    // Detect session start: studySeconds goes from 0 (or uninitialised) to >0
+                    // We do NOT require data.sessionActive because the RPi may not set that field
                     const currentStudySeconds = data.studySeconds || 0;
-                    if (currentStudySeconds > 0 && previousStudySeconds === 0 && data.sessionActive) {
+                    if (previousStudySeconds !== -1 && currentStudySeconds > 0 && previousStudySeconds === 0 && !sessionNotificationSent) {
+                        sessionNotificationSent = true;
                         showSessionStartNotification();
+                        // Reset flag after a delay so it can fire again for the next session
+                        setTimeout(() => { sessionNotificationSent = false; }, 60000);
                     }
-                    previousStudySeconds = currentStudySeconds;
+                    // First load: just record current value, don't notify
+                    if (previousStudySeconds === -1) {
+                        previousStudySeconds = currentStudySeconds;
+                    } else {
+                        previousStudySeconds = currentStudySeconds;
+                    }
 
                     console.log('📊 Real-time update: Today data changed and masterState synced');
                     updateHomePage();
@@ -2497,13 +2508,27 @@
 
         // Test notification manually
         function testNotification() {
-            const currentBook = todayData.currentBook || 1;
-            const bookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || 0;
-            const bookName = bookNames[`book${currentBook}`] || `Book ${currentBook}`;
+            // Use all available data sources for best book/page accuracy
+            const currentBook = todayData.currentBook || masterState.currentBook || (lastSession ? lastSession.book : 1);
             
-            const testMessage = `Test: Continue reading "${bookName}" - Page ${bookmark}`;
+            const todayBookmark = (todayData.bookmarks && todayData.bookmarks[`book${currentBook}`]) || 0;
+            const masterBookmark = (masterState.bookmarks && masterState.bookmarks[`book${currentBook}`]) || 0;
+            const sessionBookmark = (lastSession && lastSession.book == currentBook) ? lastSession.page : (lastSession ? lastSession.page : 0);
+            const bookmark = todayBookmark || masterBookmark || sessionBookmark || 0;
             
-            // Show browser notification
+            const bookName = bookNames[`book${currentBook}`] || (lastSession ? lastSession.bookName : null) || `Book ${currentBook}`;
+            
+            const testMessage = `Test: Continue reading "${bookName}" - You are on Page ${bookmark}`;
+            
+            // Show in-app notification first (always works)
+            showNotification({
+                title: '🧪 Test Notification',
+                message: testMessage,
+                type: 'info',
+                duration: 6000
+            });
+
+            // Show browser push notification
             if ('Notification' in window && Notification.permission === 'granted') {
                 const notification = new Notification('🧪 Test Notification', {
                     body: testMessage,
@@ -2520,47 +2545,31 @@
                 };
                 
                 console.log('✅ Test browser notification sent!');
-            } else {
+            } else if ('Notification' in window && Notification.permission === 'denied') {
                 showNotification({
-                    title: '⚠️ Browser Notifications Disabled',
-                    message: 'Please enable browser notifications first',
+                    title: '🚫 Notifications Blocked',
+                    message: 'Go to browser Settings → Site Settings → Notifications → Allow for this site.',
                     type: 'warning',
-                    duration: 5000
+                    duration: 10000
+                });
+            } else {
+                // permission not yet asked - request it
+                Notification.requestPermission().then(p => {
+                    if (p === 'granted') testNotification();
                 });
             }
 
-            // also fire SMS/email through backend if configured
+            // Send email if configured
             if (userEmailAddress) {
-                sendEmailNotification('🧪 Test Notification', testMessage);
+                sendEmailNotification(
+                    '🧪 Test Notification - Smart Reading Buddy',
+                    `Hello!\n\nThis is a test notification from Smart Reading Buddy.\n\n📖 Book: "${bookName}"\n📄 Page: ${bookmark}\n\nIf you received this, your email notifications are working correctly! 🎉`
+                );
             }
         }
 
-        // Check for active session and set up real-time monitoring
-        function checkActiveSession() {
-            const today = new Date().toISOString().split('T')[0];
-            let initialLoad = true;
-            
-            // Monitor changes to today's data
-            database.ref(`users/user1/dailyAnalytics/${today}`).on('value', (snapshot) => {
-                const data = snapshot.val();
-                
-                if (data && data.studySeconds > 0) {
-                    // On first load, just mark it as active without notifying
-                    if (initialLoad) {
-                        initialLoad = false;
-                        lastActiveSession = true;
-                        console.log('📊 Session detected on load');
-                    } else if (!lastActiveSession) {
-                        // New session started since we last checked
-                        lastActiveSession = true;
-                        showSessionStartNotification();
-                    }
-                } else {
-                    // Session ended
-                    lastActiveSession = false;
-                }
-            });
-        }
+        // checkActiveSession is REMOVED - session detection is handled in setupRealtimeListeners()
+        // to avoid duplicate Firebase listeners on the same path
 
         // Load all data from Firebase
         function loadAllData() {
