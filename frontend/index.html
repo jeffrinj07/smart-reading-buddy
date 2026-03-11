@@ -1921,7 +1921,12 @@
         let userEmailAddress = null;
         // Dynamic backend URL - works on any device (laptop, mobile, tablet)
         // If served from Vercel, window.location.origin IS the backend
-        const BACKEND_URL = window.location.origin;
+        let BACKEND_URL = window.location.origin;
+        if (window.location.protocol === 'file:' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
+            // Provide a fallback for local file loading so the API still works during development
+            BACKEND_URL = 'http://localhost:3000';
+        }
+        
         let currentSessionStartTime = null;
         let currentSessionData = {
             book: null,
@@ -2110,26 +2115,24 @@
             const today = new Date().toISOString().split('T')[0];
             let previousStudySeconds = -1; // -1 = not yet initialised
             
-            // ── Session-end detection variables ──
-            // We detect session end by watching studySeconds stop increasing
-            let lastKnownStudySeconds = -1;      // last value we saw
-            let lastStudySecondsChangeTime = 0;  // epoch-ms of last change
-            let sessionEndSent = false;           // avoid duplicate end emails
+            // ── Session Start/End detection variables ──
+            let isSessionActive = false;
+            let lastKnownStudySeconds = -1;
+            let lastStudySecondsChangeTime = 0;
+            let sessionEndSent = false;
 
-            // Poll every 30s: if studySeconds is still > 0 but hasn't changed
-            // for 90 s, treat it as session ended
+            // Poll every 10s: if studySeconds is active but hasn't changed for 90s, treat as ended
             setInterval(() => {
-                if (lastKnownStudySeconds > 0 && !sessionEndSent) {
+                if (isSessionActive && !sessionEndSent && lastKnownStudySeconds > 0) {
                     const idleMs = Date.now() - lastStudySecondsChangeTime;
                     if (idleMs >= 90000) {   // 90 seconds of no change
-                        console.log('⏹️ Session appears to have ended (idle for 90s). Sending end notification...');
+                        console.log('⏹️ Session end detected (idle for 90s).');
+                        isSessionActive = false;
                         sessionEndSent = true;
                         showSessionEndNotification();
-                        // Allow a new end-notification after 5 min so repeat sessions work
-                        setTimeout(() => { sessionEndSent = false; }, 300000);
                     }
                 }
-            }, 30000);
+            }, 10000);
             
             database.ref(`users/user1/dailyAnalytics/${today}`).on('value', (snapshot) => {
                 const data = snapshot.val();
@@ -2137,8 +2140,6 @@
                     // Update masterState ALWAYS before potential notifications
                     if (data.currentBook) masterState.currentBook = data.currentBook;
                     if (data.bookmarks) {
-                        // Max-Page Logic: Only update if the new value is GREATER than existing
-                        // This prevents fresh "0" day-nodes from overwriting progress
                         for (const [key, val] of Object.entries(data.bookmarks)) {
                             masterState.bookmarks[key] = Math.max(masterState.bookmarks[key] || 0, val);
                         }
@@ -2146,31 +2147,29 @@
                     }
                     
                     todayData = data;
-                    
-                    // Detect session start: studySeconds goes from 0 (or uninitialised) to >0
-                    // We do NOT require data.sessionActive because the RPi may not set that field
                     const currentStudySeconds = data.studySeconds || 0;
-                    if (previousStudySeconds !== -1 && currentStudySeconds > 0 && previousStudySeconds === 0 && !sessionNotificationSent) {
-                        sessionNotificationSent = true;
-                        showSessionStartNotification();
-                        // Reset flag after a delay so it can fire again for the next session
-                        setTimeout(() => { sessionNotificationSent = false; }, 60000);
-                    }
-                    // First load: just record current value, don't notify
+                    
+                    // First load: just record current value
                     if (previousStudySeconds === -1) {
                         previousStudySeconds = currentStudySeconds;
-                    } else {
-                        previousStudySeconds = currentStudySeconds;
-                    }
-
-                    // ── Track last-change time for session-end detection ──
-                    if (currentStudySeconds !== lastKnownStudySeconds) {
                         lastKnownStudySeconds = currentStudySeconds;
                         lastStudySecondsChangeTime = Date.now();
-                        // Reset end-sent flag if study seconds started moving again
-                        if (currentStudySeconds > 0) {
-                            sessionEndSent = false;
+                    } else {
+                        // Check if study seconds increased, indicating active reading
+                        if (currentStudySeconds > previousStudySeconds) {
+                            // If a new session has started
+                            if (!isSessionActive) {
+                                console.log('▶️ Session start detected (study seconds increased).');
+                                isSessionActive = true;
+                                sessionEndSent = false;
+                                showSessionStartNotification();
+                            }
+                            
+                            // Track change time
+                            lastKnownStudySeconds = currentStudySeconds;
+                            lastStudySecondsChangeTime = Date.now();
                         }
+                        previousStudySeconds = currentStudySeconds;
                     }
 
                     console.log('📊 Real-time update: Today data changed and masterState synced');
@@ -2178,7 +2177,6 @@
                     updateBonusPoints();
                     updateAllCharts();
                     
-                    // If viewing history, we might need to refresh if today changed
                     if (achievementsViewDate === today) {
                         updateAchievements();
                     }
@@ -2188,7 +2186,6 @@
             database.ref('users/user1/dailyAnalytics').on('value', (snapshot) => {
                 allDailyData = snapshot.val() || {};
                 
-                // Calculate lifetime total from all daily data
                 lifetimeTotalSeconds = 0;
                 Object.values(allDailyData).forEach(day => {
                     lifetimeTotalSeconds += day.studySeconds || 0;
