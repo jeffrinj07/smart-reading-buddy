@@ -31,7 +31,7 @@
         }
 
         body {
-            background: #F4F7F6;
+            background: linear-gradient(160deg, #EEF2FF 0%, #FFF9E6 50%, #E8F0FE 100%);
             min-height: 100vh;
             overflow-x: hidden;
             color: #1A202C;
@@ -39,26 +39,33 @@
             font-weight: 400;
         }
 
-        /* Professional Blue/Slate Color Scheme */
+        /* Sunshine Yellow + Navy Blue Professional Theme */
         :root {
-            --primary: #2C5282; /* Deep Navy Blue */
-            --secondary: #4299E1; /* Bright Blue */
-            --success: #38A169; /* Green */
-            --warning: #ECC94B; /* Yellow */
-            --danger: #E53E3E; /* Red */
-            --info: #3182CE; /* Blue */
-            --dark: #1A202C; /* Deep Slate */
-            --light: #F7FAFC; /* Clean Gray */
-            --accent: #EDF2F7; /* Lighter Gray */
-            --gradient-1: linear-gradient(135deg, #2C5282 0%, #4299E1 100%);
-            --gradient-2: linear-gradient(135deg, #38A169 0%, #48BB78 100%);
-            --gradient-3: linear-gradient(135deg, #2D3748 0%, #4A5568 100%);
+            --primary: #1B3A6B;       /* Rich Navy Blue */
+            --secondary: #F5C518;     /* Sunshine Yellow */
+            --success: #27AE60;       /* Emerald Green */
+            --warning: #F5C518;       /* Sunshine Yellow */
+            --danger: #E53E3E;        /* Red */
+            --info: #1B3A6B;          /* Navy Blue */
+            --dark: #0F2344;          /* Deep Navy */
+            --light: #FFFDF0;         /* Warm White */
+            --accent: #FFF9E6;        /* Warm Yellow Tint */
+            --yellow: #F5C518;        /* Sunshine Yellow */
+            --yellow-light: #FFF3CD;  /* Pale Yellow */
+            --navy: #1B3A6B;          /* Navy Blue */
+            --navy-light: #2D5AA0;    /* Mid Navy */
+            --gradient-1: linear-gradient(135deg, #1B3A6B 0%, #2D5AA0 100%);
+            --gradient-2: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%);
+            --gradient-3: linear-gradient(135deg, #0F2344 0%, #1B3A6B 100%);
             --gradient-4: linear-gradient(135deg, #E53E3E 0%, #FC8181 100%);
-            --gradient-5: linear-gradient(135deg, #3182CE 0%, #63B3ED 100%);
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
-            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
-            --shadow-xl: 0 20px 25px rgba(0,0,0,0.1);
+            --gradient-5: linear-gradient(135deg, #F5C518 0%, #FFD700 100%);
+            --gradient-yellow: linear-gradient(135deg, #F5C518 0%, #FFD700 100%);
+            --gradient-navy: linear-gradient(135deg, #1B3A6B 0%, #2D5AA0 100%);
+            --shadow-sm: 0 1px 3px rgba(27,58,107,0.12);
+            --shadow-md: 0 4px 6px rgba(27,58,107,0.15);
+            --shadow-lg: 0 10px 15px rgba(27,58,107,0.15);
+            --shadow-xl: 0 20px 25px rgba(27,58,107,0.18);
+            --shadow-yellow: 0 8px 20px rgba(245,197,24,0.35);
         }
 
         /* Animations */
@@ -96,10 +103,10 @@
 
         /* Navbar */
         .navbar {
-            background: rgba(255, 255, 255, 0.95);
+            background: linear-gradient(135deg, #0F2344 0%, #1B3A6B 60%, #2D5AA0 100%);
             backdrop-filter: blur(10px);
             padding: 1rem 2rem;
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 4px 20px rgba(15,35,68,0.4);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -107,9 +114,7 @@
             position: sticky;
             top: 0;
             z-index: 1000;
-            border-bottom: 3px solid transparent;
-            border-image: var(--gradient-1);
-            border-image-slice: 1;
+            border-bottom: 4px solid #F5C518;
         }
 
         .nav-brand {
@@ -118,19 +123,15 @@
             gap: 15px;
             font-size: 1.8rem;
             font-weight: 800;
-            background: var(--gradient-1);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #F5C518;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
             animation: float 3s ease-in-out infinite;
         }
 
         .nav-brand i {
-            background: var(--gradient-1);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #F5C518;
             font-size: 2rem;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
         }
 
         .nav-menu {
@@ -145,39 +146,41 @@
             cursor: pointer;
             transition: all 0.3s;
             font-weight: 600;
-            color: var(--dark);
+            color: rgba(255,255,255,0.85);
             display: flex;
             align-items: center;
             gap: 8px;
-            background: var(--light);
-            border: 2px solid transparent;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.15);
         }
 
         .nav-item i {
             font-size: 1.2rem;
-            color: var(--primary);
+            color: #F5C518;
         }
 
         .nav-item:hover {
-            background: var(--gradient-1);
-            color: white;
+            background: var(--gradient-yellow);
+            color: #0F2344;
             transform: translateY(-3px);
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--shadow-yellow);
+            border-color: #F5C518;
         }
 
         .nav-item:hover i {
-            color: white;
+            color: #0F2344;
         }
 
         .nav-item.active {
-            background: var(--gradient-1);
-            color: white;
+            background: var(--gradient-yellow);
+            color: #0F2344;
+            border-color: #FFD700;
+            box-shadow: var(--shadow-yellow);
             animation: pulse 2s infinite;
-            border-color: white;
         }
 
         .nav-item.active i {
-            color: white;
+            color: #0F2344;
         }
 
         /* Container */
@@ -241,23 +244,23 @@
             font-size: 2.2rem;
             font-weight: 700;
             margin-bottom: 10px;
-            color: #2d3748;
+            color: #0F2344;
             text-shadow: 0 2px 4px rgba(255,255,255,0.8);
         }
 
         .welcome p {
             font-size: 1.1rem;
-            color: #2d3748;
+            color: #1B3A6B;
             font-weight: 500;
         }
 
         .date-time {
-            background: var(--gradient-1);
+            background: linear-gradient(135deg, #F5C518 0%, #FFD700 50%, #FFC107 100%);
             padding: 20px 30px;
             border-radius: 25px;
             text-align: center;
-            color: white;
-            box-shadow: var(--shadow-lg);
+            color: #0F2344;
+            box-shadow: var(--shadow-yellow);
             position: relative;
             overflow: hidden;
         }
@@ -275,20 +278,22 @@
 
         .date {
             font-size: 1.3rem;
-            font-weight: 500;
+            font-weight: 600;
             margin-bottom: 5px;
+            color: #0F2344;
         }
 
         .time {
             font-size: 2.5rem;
             font-weight: 800;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            color: #0F2344;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
         }
 
         .refresh-btn {
-            background: white;
+            background: #0F2344;
             border: none;
-            color: var(--primary);
+            color: #F5C518;
             width: 50px;
             height: 50px;
             border-radius: 50%;
@@ -301,8 +306,9 @@
 
         .refresh-btn:hover {
             transform: rotate(180deg) scale(1.1);
-            background: var(--gradient-1);
-            color: white;
+            background: #1B3A6B;
+            color: #FFD700;
+            box-shadow: 0 5px 15px rgba(15,35,68,0.4);
         }
 
         /* Stats Grid */
@@ -348,14 +354,21 @@
         .stat-icon {
             width: 70px;
             height: 70px;
-            background: var(--gradient-1);
+            background: var(--gradient-navy);
             border-radius: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 2rem;
-            color: white;
+            color: #F5C518;
             animation: pulse 2s infinite;
+            box-shadow: 0 4px 15px rgba(27,58,107,0.3);
+        }
+
+        .stat-card:nth-child(even) .stat-icon {
+            background: var(--gradient-yellow);
+            color: #0F2344;
+            box-shadow: var(--shadow-yellow);
         }
 
         .stat-content {
@@ -363,31 +376,31 @@
         }
 
         .stat-title {
-            color: #2d3748;
+            color: #1B3A6B;
             font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 5px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .stat-value {
-            color: #2d3748;
+            color: #0F2344;
             font-size: 2.2rem;
             font-weight: 700;
             line-height: 1.2;
         }
 
         .stat-sub {
-            color: var(--primary);
+            color: #2D5AA0;
             font-size: 0.85rem;
             margin-top: 5px;
-            font-weight: 500;
+            font-weight: 600;
         }
 
         /* Current Session Card */
         .current-session-card {
-            background: var(--gradient-1);
+            background: linear-gradient(135deg, #0F2344 0%, #1B3A6B 60%, #2D5AA0 100%);
             border-radius: 30px;
             padding: 30px;
             margin-bottom: 30px;
@@ -395,7 +408,8 @@
             position: relative;
             overflow: hidden;
             animation: pulse 3s infinite;
-            box-shadow: var(--shadow-xl);
+            box-shadow: 0 15px 40px rgba(15,35,68,0.4);
+            border: 2px solid rgba(245,197,24,0.3);
         }
 
         .current-session-card::before {
@@ -492,11 +506,12 @@
         .today-summary-item {
             text-align: center;
             padding: 15px;
-            background: var(--gradient-1);
+            background: linear-gradient(135deg, #F5C518 0%, #FFD700 100%);
             border-radius: 15px;
-            color: white;
+            color: #0F2344;
             position: relative;
             overflow: hidden;
+            box-shadow: var(--shadow-yellow);
         }
 
         .today-summary-item::before {
@@ -506,15 +521,16 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
             animation: spin 10s linear infinite;
         }
 
         .today-summary-value {
             font-size: 2rem;
-            font-weight: 700;
+            font-weight: 800;
             position: relative;
             z-index: 1;
+            color: #0F2344;
         }
 
         .today-summary-label {
@@ -522,6 +538,8 @@
             margin-top: 5px;
             position: relative;
             z-index: 1;
+            font-weight: 600;
+            color: #1B3A6B;
         }
 
         /* Current Book Card */
@@ -622,9 +640,10 @@
         .time-filter {
             display: flex;
             gap: 10px;
-            background: #edf2f7;
+            background: #EEF2FF;
             padding: 5px;
             border-radius: 50px;
+            border: 2px solid #D1D9F0;
         }
 
         .filter-btn {
@@ -632,7 +651,7 @@
             border: none;
             border-radius: 50px;
             background: transparent;
-            color: #4a5568;
+            color: #1B3A6B;
             cursor: pointer;
             transition: all 0.3s;
             font-weight: 600;
@@ -640,15 +659,16 @@
         }
 
         .filter-btn:hover {
-            background: var(--gradient-1);
+            background: var(--gradient-navy);
             color: white;
             transform: translateY(-2px);
             box-shadow: var(--shadow-md);
         }
 
         .filter-btn.active {
-            background: var(--gradient-1);
-            color: white;
+            background: var(--gradient-yellow);
+            color: #0F2344;
+            box-shadow: var(--shadow-yellow);
         }
 
         /* Chart Container */
@@ -866,18 +886,19 @@
         }
 
         .timeline-date {
-            color: var(--primary);
-            font-weight: 600;
+            color: #1B3A6B;
+            font-weight: 700;
             font-size: 1.1rem;
         }
 
         .timeline-duration {
-            background: var(--gradient-1);
-            color: white;
+            background: var(--gradient-yellow);
+            color: #0F2344;
             padding: 5px 15px;
             border-radius: 25px;
             font-size: 0.9rem;
-            font-weight: 600;
+            font-weight: 700;
+            box-shadow: var(--shadow-yellow);
         }
 
         .timeline-details {
@@ -895,7 +916,7 @@
 
         /* Bonus Card */
         .bonus-card {
-            background: var(--gradient-3);
+            background: linear-gradient(135deg, #0F2344 0%, #1B3A6B 50%, #2D5AA0 100%);
             border-radius: 25px;
             padding: 25px;
             color: white;
@@ -903,7 +924,8 @@
             position: relative;
             overflow: hidden;
             animation: pulse 2s infinite;
-            box-shadow: var(--shadow-xl);
+            box-shadow: 0 15px 35px rgba(15,35,68,0.4);
+            border: 2px solid rgba(245,197,24,0.4);
         }
 
         .bonus-card::before {
@@ -928,16 +950,19 @@
             font-size: 2.5rem;
             font-weight: 800;
             margin-bottom: 10px;
+            color: #F5C518;
+            text-shadow: 0 2px 10px rgba(245,197,24,0.5);
         }
 
         .bonus-streak {
             font-size: 1.1rem;
-            background: rgba(255,255,255,0.2);
+            background: rgba(245,197,24,0.2);
             backdrop-filter: blur(5px);
             display: inline-block;
             padding: 8px 20px;
             border-radius: 25px;
-            border: 2px solid rgba(255,255,255,0.3);
+            border: 2px solid rgba(245,197,24,0.5);
+            color: #FFD700;
         }
 
         .bonus-progress {
@@ -1066,9 +1091,9 @@
             padding: 12px 20px;
             border: none;
             border-radius: 50px;
-            background: var(--gradient-1);
+            background: var(--gradient-navy);
             color: white;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
@@ -1078,8 +1103,10 @@
         }
 
         .export-btn:hover {
+            background: var(--gradient-yellow);
+            color: #0F2344;
             transform: translateY(-3px);
-            box-shadow: var(--shadow-xl);
+            box-shadow: var(--shadow-yellow);
         }
 
         /* Notification Inputs Container */
@@ -1096,7 +1123,7 @@
             background: white;
             padding: 8px;
             border-radius: 15px;
-            border: 2px solid #e2e8f0;
+            border: 2px solid #D1D9F0;
             box-shadow: var(--shadow-md);
         }
 
@@ -1107,27 +1134,27 @@
             border-radius: 10px;
             font-size: 0.95rem;
             outline: none;
-            color: #2d3748;
-            background: #f7fafc;
+            color: #0F2344;
+            background: #F9F7FF;
             font-weight: 500;
         }
 
         .phone-input::placeholder, .email-input::placeholder {
-            color: #a0aec0;
+            color: #94a3b8;
         }
 
         .phone-input:focus, .email-input:focus {
             background: white;
-            box-shadow: inset 0 0 0 2px var(--primary);
+            box-shadow: inset 0 0 0 2px #1B3A6B;
         }
 
         .phone-save-btn, .email-save-btn {
             padding: 12px 18px;
             border: none;
             border-radius: 10px;
-            background: var(--gradient-1);
-            color: white;
-            font-weight: 600;
+            background: var(--gradient-navy);
+            color: #F5C518;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s;
             box-shadow: var(--shadow-md);
@@ -1135,35 +1162,39 @@
         }
 
         .phone-save-btn:hover, .email-save-btn:hover {
+            background: var(--gradient-yellow);
+            color: #0F2344;
             transform: scale(1.05);
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--shadow-yellow);
         }
 
         /* Browser Notification Button */
         .browser-notification-btn {
             background: white;
-            border: 2px solid var(--primary);
-            color: var(--primary);
+            border: 2px solid #1B3A6B;
+            color: #1B3A6B;
             padding: 8px 15px;
             border-radius: 20px;
             cursor: pointer;
             font-size: 0.9rem;
             margin-left: 10px;
             transition: all 0.3s;
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .browser-notification-btn:hover {
-            background: var(--gradient-1);
-            color: white;
+            background: var(--gradient-navy);
+            color: #F5C518;
+            border-color: #1B3A6B;
             transform: translateY(-2px);
             box-shadow: var(--shadow-md);
         }
 
         /* Loading Spinner */
         .spinner {
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid var(--primary);
+            border: 4px solid #D1D9F0;
+            border-top: 4px solid #F5C518;
+            border-right: 4px solid #1B3A6B;
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -1210,7 +1241,7 @@
             width: 120px;
             height: 120px;
             border-radius: 50%;
-            background: conic-gradient(var(--primary) 0deg, #e2e8f0 0deg);
+            background: conic-gradient(#1B3A6B 0deg, #F5C518 0deg);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1232,7 +1263,7 @@
             z-index: 1;
             font-size: 1.5rem;
             font-weight: 700;
-            color: var(--dark);
+            color: #0F2344;
         }
 
         /* Achievement Badges */
@@ -1248,27 +1279,32 @@
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            background: var(--gradient-1);
+            background: var(--gradient-navy);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: white;
+            color: #F5C518;
             font-size: 2rem;
             position: relative;
             cursor: pointer;
             transition: all 0.3s;
             animation: float 3s ease-in-out infinite;
+            border: 3px solid rgba(245,197,24,0.3);
         }
 
         .badge:hover {
             transform: scale(1.1) rotate(5deg);
-            box-shadow: var(--shadow-xl);
+            box-shadow: var(--shadow-yellow);
+            background: var(--gradient-yellow);
+            color: #0F2344;
         }
 
         .badge.locked {
-            background: #cbd5e0;
-            opacity: 0.5;
+            background: #D1D9F0;
+            color: #94a3b8;
+            border-color: transparent;
+            opacity: 0.6;
         }
 
         .badge span {
@@ -1395,25 +1431,30 @@
                 <p><i class="fas fa-sync-alt"></i> Last updated: <span id="lastUpdateTime">Just now</span></p>
                 
                 <!-- Notification Settings -->
-                <div style="background: rgba(255,255,255,0.3); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-top: 15px; border: 2px solid rgba(255,255,255,0.5);">
-                    <h3 style="color: #2d3748; margin-bottom: 15px; font-weight: 600;">📢 Notification Settings</h3>
+                <div style="background: linear-gradient(135deg, #EEF2FF 0%, #FFF9E6 100%); border-radius: 20px; padding: 20px; margin-top: 15px; border: 2px solid rgba(27,58,107,0.2); box-shadow: 0 4px 15px rgba(27,58,107,0.1);">
+                    <h3 style="color: #0F2344; margin-bottom: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;"><span style="background: linear-gradient(135deg,#F5C518,#FFD700); padding: 4px 10px; border-radius: 10px; color: #0F2344;">📢</span> Notification Settings</h3>
                     
                     <div class="notification-inputs-container" style="grid-template-columns: 1fr;">
                         <!-- Email Input for Email Notifications -->
                         <div class="email-input-container">
-                            <input type="email" class="email-input" id="emailAddress" placeholder="Email: user@example.com" value="">
+                            <input type="email" class="email-input" id="emailAddress" placeholder="📧 Enter your email address" value="">
                             <button class="email-save-btn" onclick="saveEmailAddress()">
                                 <i class="fas fa-save"></i> Save Email
                             </button>
                         </div>
                     </div>
                     
+                    <p style="font-size:0.82rem; color:#1B3A6B; margin: 8px 0 12px 0; font-weight:500;">
+                        <i class="fas fa-info-circle" style="color:#F5C518;"></i>
+                        You'll receive email alerts when your <strong>session starts</strong> and a <strong>full summary</strong> when it ends.
+                    </p>
+                    
                     <!-- Notification Buttons -->
-                    <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
                         <button class="browser-notification-btn" onclick="requestNotificationPermission()" style="flex: 1; min-width: 180px;">
                             <i class="fas fa-bell"></i> Enable Browser Notifications
                         </button>
-                        <button class="browser-notification-btn" onclick="testNotification()" style="background: var(--gradient-2); color: white; border-color: var(--success); flex: 1; min-width: 180px;">
+                        <button class="browser-notification-btn" onclick="testNotification()" style="background: linear-gradient(135deg,#F5C518,#FFD700); color: #0F2344; border-color: #F5C518; flex: 1; min-width: 180px; font-weight: 700;">
                             <i class="fas fa-flask"></i> Test Notifications
                         </button>
                     </div>
@@ -2069,6 +2110,27 @@
             const today = new Date().toISOString().split('T')[0];
             let previousStudySeconds = -1; // -1 = not yet initialised
             
+            // ── Session-end detection variables ──
+            // We detect session end by watching studySeconds stop increasing
+            let lastKnownStudySeconds = -1;      // last value we saw
+            let lastStudySecondsChangeTime = 0;  // epoch-ms of last change
+            let sessionEndSent = false;           // avoid duplicate end emails
+
+            // Poll every 30s: if studySeconds is still > 0 but hasn't changed
+            // for 90 s, treat it as session ended
+            setInterval(() => {
+                if (lastKnownStudySeconds > 0 && !sessionEndSent) {
+                    const idleMs = Date.now() - lastStudySecondsChangeTime;
+                    if (idleMs >= 90000) {   // 90 seconds of no change
+                        console.log('⏹️ Session appears to have ended (idle for 90s). Sending end notification...');
+                        sessionEndSent = true;
+                        showSessionEndNotification();
+                        // Allow a new end-notification after 5 min so repeat sessions work
+                        setTimeout(() => { sessionEndSent = false; }, 300000);
+                    }
+                }
+            }, 30000);
+            
             database.ref(`users/user1/dailyAnalytics/${today}`).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
@@ -2099,6 +2161,16 @@
                         previousStudySeconds = currentStudySeconds;
                     } else {
                         previousStudySeconds = currentStudySeconds;
+                    }
+
+                    // ── Track last-change time for session-end detection ──
+                    if (currentStudySeconds !== lastKnownStudySeconds) {
+                        lastKnownStudySeconds = currentStudySeconds;
+                        lastStudySecondsChangeTime = Date.now();
+                        // Reset end-sent flag if study seconds started moving again
+                        if (currentStudySeconds > 0) {
+                            sessionEndSent = false;
+                        }
                     }
 
                     console.log('📊 Real-time update: Today data changed and masterState synced');
@@ -2452,51 +2524,95 @@
         
         // Show notification when session ends
         function showSessionEndNotification() {
-            if (!currentSessionData.book) return;
-            
             const endTime = new Date();
-            const durationMinutes = Math.round((endTime - currentSessionData.startTime) / 60000);
             
-            const message = `Session complete! You read "${currentSessionData.book}" for ${durationMinutes} minutes.`;
+            // Gather the best available session data:
+            //  1. currentSessionData (set at session start)
+            //  2. Fall back to lastSession from Firebase history
+            //  3. Fall back to todayData / masterState
+            const bookNum  = (currentSessionData.book ? null : null) ||
+                             (lastSession ? lastSession.book : (todayData.currentBook || masterState.currentBook || 1));
+            const bookName = currentSessionData.book ||
+                             bookNames[`book${bookNum}`] ||
+                             (lastSession && lastSession.bookName) ||
+                             `Book ${bookNum}`;
+            const page     = currentSessionData.bookmark ||
+                             (lastSession ? lastSession.page : 0) ||
+                             (masterState.bookmarks && masterState.bookmarks[`book${bookNum}`]) || 0;
+            const breaks   = currentSessionData.breaks ||
+                             (lastSession ? lastSession.breaks : 0);
+            const alerts   = currentSessionData.postureAlerts ||
+                             (lastSession ? lastSession.postureAlerts : 0);
             
-            // Show enhanced browser notification
+            // Duration: prefer real start time, else last session's recorded duration
+            let durationMinutes = 0;
+            if (currentSessionData.startTime) {
+                durationMinutes = Math.max(1, Math.round((endTime - currentSessionData.startTime) / 60000));
+            } else if (lastSession) {
+                durationMinutes = Math.round(lastSession.duration / 60);
+            }
+            
+            const startTimeStr = currentSessionData.startTime
+                ? currentSessionData.startTime.toLocaleTimeString()
+                : (lastSession && lastSession.startTime
+                    ? new Date(lastSession.startTime * 1000).toLocaleTimeString()
+                    : 'N/A');
+            const endTimeStr = endTime.toLocaleTimeString();
+            const dateStr    = endTime.toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+            const inAppMsg = `📖 "${bookName}" · ${durationMinutes} min · Page ${page} · ${breaks} break(s)`;
+            
+            // ── Browser Push Notification ──
             if ('Notification' in window && Notification.permission === 'granted') {
-                const notification = new Notification('✅ Reading Session Complete', {
-                    body: message,
+                const notif = new Notification('✅ Reading Session Complete!', {
+                    body: `${bookName} · ${durationMinutes} min · Page ${page}`,
                     icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="75" font-size="75">✅</text></svg>',
                     tag: 'reading-session-end',
-                    requireInteraction: false,
-                    vibrate: [200, 100, 200]
+                    requireInteraction: true,
+                    vibrate: [200, 100, 200, 100, 200]
                 });
-                
-                notification.onclick = () => {
-                    window.focus();
-                    notification.close();
-                };
+                notif.onclick = () => { window.focus(); notif.close(); };
             }
             
-            // Prepare session summary
-            const sessionSummary = `Session Summary:\n📖 Book: "${currentSessionData.book}"\n📄 Page: ${currentSessionData.bookmark}\n⏱️ Duration: ${durationMinutes} minutes\n☕ Breaks: ${currentSessionData.breaks}\n⚠️ Posture Alerts: ${currentSessionData.postureAlerts}`;
-            
-            // Send email if email is configured
+            // ── Email Notification with full session details ──
             if (userEmailAddress) {
-                sendEmailNotification(
-                    '✅ Your Reading Session Summary',
-                    `Hello!\n\nYour reading session has ended.\n\n${sessionSummary}\n\nEnd Time: ${endTime.toLocaleTimeString()}\n\nKeep up the amazing reading streak!`
-                );
+                const emailSubject = `✅ Reading Session Complete — ${dateStr}`;
+                const emailBody =
+`Hello! 👋
+
+Your reading session has ended. Here's your session summary:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📚 SESSION SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📖  Book:           "${bookName}"
+📄  Final Page:     ${page}
+⏱️  Duration:       ${durationMinutes} minute${durationMinutes !== 1 ? 's' : ''}
+☕  Breaks Taken:   ${breaks}
+⚠️  Posture Alerts: ${alerts}
+🕐  Session Start:  ${startTimeStr}
+🕑  Session End:    ${endTimeStr}
+📅  Date:           ${dateStr}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Great job reading today! Keep up your amazing streak! 🔥
+
+— Smart Reading Buddy 📚`;
+
+                sendEmailNotification(emailSubject, emailBody);
             }
             
-            // Show in-app notification
+            // ── In-app Notification ──
             showNotification({
                 title: '✅ Session Complete!',
-                message: message,
+                message: inAppMsg,
                 type: 'success',
-                duration: 8000
+                duration: 10000
             });
             
-            console.log(`✅ Session ended: ${sessionSummary}`);
+            console.log(`✅ Session end notification fired: "${bookName}" page ${page} — ${durationMinutes} min`);
             
-            // Reset session data
+            // Reset session tracking data
             currentSessionData = {
                 book: null,
                 bookmark: 0,
